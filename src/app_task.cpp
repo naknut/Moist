@@ -32,6 +32,8 @@
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 
+#include <app-common/zap-generated/attributes/Accessors.h>
+
 LOG_MODULE_DECLARE(app, CONFIG_CHIP_APP_LOG_LEVEL);
 
 using namespace ::chip;
@@ -82,6 +84,18 @@ namespace StatusLed
 app::Clusters::NetworkCommissioning::Instance
 	sWiFiCommissioningInstance(0, &(NetworkCommissioning::NrfWiFiDriver::Instance()));
 #endif
+
+constexpr size_t kMeasurementsIntervalMs = 3000;
+
+k_timer sSensorTimer;
+
+void SensorTimerHandler(k_timer *timer)
+{
+	AppEvent event;
+	event.Type = AppEventType::SensorMeasure;
+	event.Handler = AppTask::SensorMeasureHandler;
+	AppTask::Instance().PostEvent(event);
+}
 
 CHIP_ERROR AppTask::Init()
 {
@@ -174,6 +188,10 @@ CHIP_ERROR AppTask::Init()
 		LOG_ERR("PlatformMgr().StartEventLoopTask() failed");
 		return err;
 	}
+
+	k_timer_init(&sSensorTimer, &SensorTimerHandler, nullptr);
+	k_timer_user_data_set(&sSensorTimer, this);
+	k_timer_start(&sSensorTimer, K_MSEC(kMeasurementsIntervalMs), K_MSEC(kMeasurementsIntervalMs));
 
 	return CHIP_NO_ERROR;
 }
@@ -344,5 +362,17 @@ void AppTask::DispatchEvent(const AppEvent &event)
 		event.Handler(event);
 	} else {
 		LOG_INF("Event received with no handler. Dropping event.");
+	}
+}
+
+void AppTask::SensorMeasureHandler(const AppEvent &)
+{
+	EmberAfStatus status;
+	status = chip::app::Clusters::RelativeHumidityMeasurement::Attributes::MeasuredValue::Set(
+                /* endpoint ID */ 1, /* temperature in 0.01*C */ int16_t(rand() % 100000));
+	if (status == EMBER_ZCL_STATUS_SUCCESS) {
+		LOG_INF("Wrote new value");
+	} else {
+		LOG_ERR("Updating temperature measurement %x", status);
 	}
 }
