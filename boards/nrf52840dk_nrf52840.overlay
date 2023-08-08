@@ -34,10 +34,10 @@
 
 	channel@0 {
 		reg = <0>;
-		zephyr,gain = "ADC_GAIN_1_6";
-		zephyr,reference = "ADC_REF_INTERNAL";
+		zephyr,gain = "ADC_GAIN_1_5";
+		zephyr,reference = "ADC_REF_VDD_1_4";
+		zephyr,vref-mv = <750>;
 		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
-		zephyr,input-positive = <NRF_SAADC_AIN1>; /* P0.03 */
 		zephyr,resolution = <12>;
 	};
 
@@ -46,7 +46,6 @@
 		zephyr,gain = "ADC_GAIN_1_6";
 		zephyr,reference = "ADC_REF_INTERNAL";
 		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
-		zephyr,input-positive = <NRF_SAADC_VDD>;
 		zephyr,resolution = <14>;
 		zephyr,oversampling = <8>;
 	};
@@ -57,8 +56,6 @@
 		zephyr,reference = "ADC_REF_VDD_1_4";
 		zephyr,vref-mv = <750>;
 		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
-		zephyr,input-positive = <NRF_SAADC_AIN6>; /* P0.30 */
-		zephyr,input-negative = <NRF_SAADC_AIN7>; /* P0.31 */
 		zephyr,resolution = <12>;
 	};
 };
@@ -81,8 +78,4 @@
 };
 &usbd {
 	status = "disabled";
-};
-
-&arduino_adc {
-    io-channel-map = <0 &adc 1>, <1 &adc 2>, <2 &adc 4>, <3 &adc 5>, <4 &adc 6>, <5 &adc 7>;
 };
