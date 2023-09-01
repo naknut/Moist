@@ -411,9 +411,9 @@ void AppTask::SensorMeasureHandler(const AppEvent &)
 		.buffer_size = sizeof(buf),
 	};
 
+	int16_t val_mv;
 	printk("ADC reading\n");
  	for (size_t i = 0U; i < ARRAY_SIZE(adc_channels); i++) {
- 		int32_t val_mv;
 
  		printk("- %s, channel %d: ",
  		       adc_channels[i].dev->name,
@@ -427,29 +427,15 @@ void AppTask::SensorMeasureHandler(const AppEvent &)
  			continue;
  		}
 
-		/*
-		 * If using differential mode, the 16 bit value
-		 * in the ADC sample buffer should be a signed 2's
-		 * complement value.
-		 */
-		if (adc_channels[i].channel_cfg.differential) {
-			val_mv = (int32_t)((int16_t)buf);
-		} else {
-			val_mv = (int32_t)buf;
-		}
+		uint16_t buf2 = buf;
+		printk("%" PRId32, buf2);
+		printk(" - ");
+		val_mv = (250 * (920 - buf2)) / 7;
 		printk("%" PRId32, val_mv);
-		err = adc_raw_to_millivolts_dt(&adc_channels[i], &val_mv);
-		/* conversion to mV may not be supported, skip if not */
-		if (err < 0) {
-			printk(" (value in mV not available)\n");
-		} else {
-			printk(" = %" PRId32 " mV\n", val_mv);
-		}
 	}
 
 	EmberAfStatus status;
-	status = chip::app::Clusters::RelativeHumidityMeasurement::Attributes::MeasuredValue::Set(
-                /* endpoint ID */ 1, /* temperature in 0.01*C */ int16_t(rand() % 100000));
+	status = chip::app::Clusters::RelativeHumidityMeasurement::Attributes::MeasuredValue::Set(1, val_mv);
 	if (status == EMBER_ZCL_STATUS_SUCCESS) {
 		LOG_INF("Wrote new value");
 	} else {
